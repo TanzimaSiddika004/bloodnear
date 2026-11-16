@@ -1,14 +1,55 @@
 const path = require('node:path');
 const fs = require('node:fs');
-const { DatabaseSync } = require('node:sqlite');
+const os = require('node:os');
+let DatabaseSync;
+try {
+  ({ DatabaseSync } = require('node:sqlite'));
+} catch (err) {
+  throw new Error('BloodNear requires Node.js 22.5.0 or newer with node:sqlite support. Currently running Node ' + process.version);
+}
 const { hashPassword } = require('./auth');
 const { uid, nowIso, addHoursIso } = require('./utils');
 
-const dataDir = path.join(__dirname, '..', 'data');
-fs.mkdirSync(dataDir, { recursive: true });
-const dbPath = process.env.DB_PATH || path.join(dataDir, 'bloodnear.sqlite');
+function resolveDbPath() {
+  if (process.env.DB_PATH) {
+    try {
+      fs.mkdirSync(path.dirname(process.env.DB_PATH), { recursive: true });
+    } catch {}
+    return process.env.DB_PATH;
+  }
+
+  // On Vercel / AWS Lambda / Serverless environments, /var/task is read-only.
+  // /tmp is the writable directory in Linux serverless.
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const tmpDir = process.platform === 'win32' ? os.tmpdir() : '/tmp';
+    try {
+      fs.mkdirSync(tmpDir, { recursive: true });
+    } catch {}
+    return path.join(tmpDir, 'bloodnear.sqlite');
+  }
+
+  // Standard local environment
+  const localDir = path.join(__dirname, '..', 'data');
+  try {
+    fs.mkdirSync(localDir, { recursive: true });
+    return path.join(localDir, 'bloodnear.sqlite');
+  } catch {
+    const tmp = os.tmpdir();
+    return path.join(tmp, 'bloodnear.sqlite');
+  }
+}
+
+const dbPath = resolveDbPath();
+try {
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+} catch {}
 const db = new DatabaseSync(dbPath);
-db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
+try {
+  db.exec('PRAGMA foreign_keys = ON;');
+  db.exec('PRAGMA journal_mode = WAL;');
+} catch {
+  try { db.exec('PRAGMA journal_mode = DELETE;'); } catch {}
+}
 
 function initDb() {
   db.exec(`

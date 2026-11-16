@@ -4,7 +4,7 @@
   "private": true,
   "description": "Location-aware community blood request and donor matching platform",
   "type": "commonjs",
-  "engines": { "node": ">=22.5.0" },
+  "engines": { "node": "22.x" },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",

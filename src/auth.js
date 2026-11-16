@@ -42,7 +42,8 @@ function verify(token) {
 }
 
 function parseCookies(req) {
-  const raw = req.headers.cookie || '';
+  if (req && req.cookies && typeof req.cookies === 'object') return req.cookies;
+  const raw = req?.headers?.cookie || '';
   return Object.fromEntries(raw.split(';').map(v => v.trim()).filter(Boolean).map(pair => {
     const index = pair.indexOf('=');
     return [decodeURIComponent(pair.slice(0, index)), decodeURIComponent(pair.slice(index + 1))];

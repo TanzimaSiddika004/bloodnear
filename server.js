@@ -32,6 +32,14 @@ function error(res, status, message, details) {
 }
 
 async function readJson(req) {
+  if (req && req.body !== undefined && req.body !== null) {
+    if (typeof req.body === 'object') return req.body;
+    if (typeof req.body === 'string') {
+      if (!req.body.trim()) return {};
+      try { return JSON.parse(req.body); }
+      catch { throw Object.assign(new Error('Invalid JSON body'), { status: 400 }); }
+    }
+  }
   let size = 0;
   const chunks = [];
   for await (const chunk of req) {
@@ -46,7 +54,7 @@ async function readJson(req) {
 
 function normalizeEmail(v) { return String(v || '').trim().toLowerCase(); }
 function clean(v, max = 500) { return String(v || '').trim().slice(0, max); }
-function number(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
+function number(v) { if (v === null || v === undefined || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
 function validBlood(v) { return BLOOD_GROUPS.includes(v); }
 function validLatLng(lat, lng) { return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180; }
 function isEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
@@ -79,7 +87,8 @@ function requireAdmin(req, res) {
 }
 
 function rateLimit(req, res, key, limit, windowMs) {
-  const ip = req.socket.remoteAddress || 'unknown';
+  const forwarded = req.headers?.['x-forwarded-for'];
+  const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null) || req.socket?.remoteAddress || 'unknown';
   const bucketKey = `${key}:${ip}`;
   const now = Date.now();
   let bucket = rateBuckets.get(bucketKey);
@@ -234,7 +243,7 @@ async function handleApi(req, res, url) {
   const pathname = url.pathname;
   const viewer = userFromRequest(req);
 
-  if (method === 'GET' && pathname === '/api/health') {
+  if (method === 'GET' && (pathname === '/api/health' || pathname === '/api' || pathname === '/api/')) {
     return json(res, 200, { ok: true, service: 'BloodNear Community API', version: '2.0.0', time: nowIso() });
   }
 
@@ -287,15 +296,20 @@ async function handleApi(req, res, url) {
   if (method === 'GET' && pathname === '/api/events') {
     const user = requireUser(req, res); if (!user) return;
     res.writeHead(200, {
-      'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive',
+      'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive',
       'X-Accel-Buffering': 'no'
     });
     res.write(`event: ready\ndata: ${JSON.stringify({ ok: true })}\n\n`);
     if (!sseClients.has(user.id)) sseClients.set(user.id, new Set());
     sseClients.get(user.id).add(res);
     const heartbeat = setInterval(() => { try { res.write(': heartbeat\n\n'); } catch {} }, 25000);
+    let serverlessTimeout = null;
+    if (process.env.VERCEL) {
+      serverlessTimeout = setTimeout(() => { try { res.end(); } catch {} }, 9500);
+    }
     req.on('close', () => {
       clearInterval(heartbeat);
+      if (serverlessTimeout) clearTimeout(serverlessTimeout);
       sseClients.get(user.id)?.delete(res);
       if (sseClients.get(user.id)?.size === 0) sseClients.delete(user.id);
     });
@@ -599,10 +613,20 @@ async function handleApi(req, res, url) {
   return error(res, 404, 'API route not found');
 }
 
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+async function handleRequest(req, res) {
+  let rawUrl = req.url || '/';
+  if (rawUrl.includes('__url=')) {
+    try {
+      const dummy = new URL(rawUrl, 'http://localhost');
+      const originalPath = dummy.searchParams.get('__url');
+      dummy.searchParams.delete('__url');
+      const remainingSearch = dummy.searchParams.toString();
+      rawUrl = originalPath + (remainingSearch ? '?' + remainingSearch : '');
+    } catch {}
+  }
+  const url = new URL(rawUrl, `http://${req.headers.host || 'localhost'}`);
   try {
-    if (url.pathname.startsWith('/api/')) return await handleApi(req, res, url);
+    if (url.pathname.startsWith('/api/') || url.pathname === '/api') return await handleApi(req, res, url);
     if (serveStatic(req, res, url.pathname)) return;
     if (req.method === 'GET' && !path.extname(url.pathname)) return serveStatic(req, res, '/');
     return error(res, 404, 'Not found');
@@ -611,9 +635,17 @@ const server = http.createServer(async (req, res) => {
     if (!res.headersSent) return error(res, err.status || 500, err.status ? err.message : 'Internal server error');
     try { res.end(); } catch {}
   }
-});
+}
 
-server.listen(PORT, HOST, () => {
-  console.log(`BloodNear Community running on http://localhost:${PORT}`);
-  if (!process.env.SESSION_SECRET) console.log('Note: set SESSION_SECRET before production deployment.');
-});
+const server = http.createServer(handleRequest);
+
+if (require.main === module) {
+  server.listen(PORT, HOST, () => {
+    console.log(`BloodNear Community running on http://localhost:${PORT}`);
+    if (!process.env.SESSION_SECRET) console.log('Note: set SESSION_SECRET before production deployment.');
+  });
+}
+
+module.exports = handleRequest;
+module.exports.server = server;
+module.exports.handleRequest = handleRequest;
