@@ -4,16 +4,6 @@
 
 BloodNear Connect is the full-stack evolution of the original BloodNear hospital-inventory prototype. Instead of pretending to know live hospital blood stock, the new platform structures the real-world workflow people already use: publish a blood request, discover exact-group needs nearby, respond as a donor, accept a response, coordinate privately, and close the request.
 
-## What changed from the old project
-
-The original static prototype ranked fictional hospitals using dummy blood inventory. That code is preserved under `legacy/` for reference, but it is no longer the product core.
-
-The new system is community-driven:
-
-```text
-Requester -> Structured Blood Request -> Location Discovery -> Exact-Group Donor Response
-          -> Requester Accepts -> Private Contact Unlock -> Fulfilled / Cancelled / Expired
-```
 
 ## Main features
 
