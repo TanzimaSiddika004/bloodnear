@@ -1,0 +1,14 @@
+{
+  "name": "bloodnear-community",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Location-aware community blood request and donor matching platform",
+  "type": "commonjs",
+  "engines": { "node": ">=22.5.0" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "reset-db": "node scripts/reset-db.js",
+    "test": "node scripts/smoke-test.js"
+  }
+}

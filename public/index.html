@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="BloodNear Connect is a location-aware community platform for structured blood requests and donor matching." />
+  <meta name="theme-color" content="#8f1024" />
+  <title>BloodNear Connect — Community Blood Request & Donor Matching</title>
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="#home" aria-label="BloodNear Connect home">
+        <span class="brand-mark" aria-hidden="true">♥</span>
+        <span><strong>BloodNear</strong><small>CONNECT</small></span>
+      </a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#discover">Discover</a>
+        <a href="#donors">Donors</a>
+        <a href="#how">How it works</a>
+        <a href="#safety">Safety</a>
+      </nav>
+      <div class="nav-actions">
+        <button class="icon-btn hidden" id="notification-btn" aria-label="Notifications"><span>🔔</span><b id="notification-badge" class="notification-badge hidden">0</b></button>
+        <button class="btn btn-ghost" id="auth-btn">Sign in</button>
+        <button class="btn btn-primary" id="create-request-btn">Post blood request</button>
+        <button class="profile-pill hidden" id="profile-btn"><span id="profile-initial">U</span><div><b id="profile-name">User</b><small>Dashboard</small></div></button>
+      </div>
+      <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation">☰</button>
+    </div>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="hero-grid-lines"></div>
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="live-dot"></span> Community-powered · location-aware · structured</div>
+          <h1>When blood is needed,<br/><span>find the right people nearby.</span></h1>
+          <p>Turn scattered social-media blood posts into searchable, trackable requests. Publish a need, discover nearby exact-group requests, respond as a donor, and coordinate through a safer structured workflow.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary btn-large" id="hero-post-btn">Post a blood request <span>→</span></button>
+            <a class="btn btn-soft btn-large" href="#discover">Explore nearby requests</a>
+          </div>
+          <div class="hero-proof">
+            <div><span class="proof-icon">⌖</span><p><b>Location-aware</b><small>Search by radius and distance</small></p></div>
+            <div><span class="proof-icon">✓</span><p><b>Exact-group matching</b><small>No automatic compatibility advice</small></p></div>
+            <div><span class="proof-icon">↻</span><p><b>Live updates</b><small>Real-time response notifications</small></p></div>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-label="BloodNear Connect request preview">
+          <div class="visual-orb orb-a"></div><div class="visual-orb orb-b"></div>
+          <div class="phone-shell">
+            <div class="phone-top"><span>Nearby requests</span><span class="tiny-live">● LIVE</span></div>
+            <div class="mini-search"><span>⌖ Kandirpar</span><b>10 km</b></div>
+            <article class="mini-request emergency">
+              <div class="mini-request-top"><span class="blood-badge">O−</span><span class="urgent-chip">Emergency</span></div>
+              <h3>2 units needed</h3><p>Cumilla Medical College Hospital</p>
+              <div class="mini-meta"><span>2.8 km away</span><span>18 min ago</span></div>
+              <button>I can donate</button>
+            </article>
+            <article class="mini-request">
+              <div class="mini-request-top"><span class="blood-badge">B+</span><span class="normal-chip">Normal</span></div>
+              <h3>1 unit needed</h3><p>Race Course, Cumilla</p>
+              <div class="mini-meta"><span>1.4 km away</span><span>34 min ago</span></div>
+            </article>
+          </div>
+          <div class="float-card float-one"><span>✓</span><p><b>Donor responded</b><small>Contact stays private until accepted</small></p></div>
+          <div class="float-card float-two"><span>⌖</span><p><b>4 exact matches</b><small>within your selected radius</small></p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="notice-strip">
+      <div class="container notice-inner"><span>!</span><p><b>Coordination platform, not a medical service.</b> BloodNear Connect does not determine donor eligibility, transfusion compatibility, or clinical suitability. Final screening and transfusion decisions belong to qualified healthcare professionals.</p></div>
+    </section>
+
+    <section class="stats-section">
+      <div class="container stats-grid">
+        <div class="stat-card"><span>Active requests</span><strong id="stat-requests">—</strong><small>open or matched</small></div>
+        <div class="stat-card"><span>Available donors</span><strong id="stat-donors">—</strong><small>active availability</small></div>
+        <div class="stat-card"><span>Emergency requests</span><strong id="stat-emergency">—</strong><small>need fast coordination</small></div>
+        <div class="stat-card"><span>Fulfilled</span><strong id="stat-fulfilled">—</strong><small>closed successfully</small></div>
+      </div>
+    </section>
+
+    <section class="section discover-section" id="discover">
+      <div class="container">
+        <div class="section-heading split">
+          <div><span class="section-kicker">DISCOVER REQUESTS</span><h2>Blood requests near you</h2><p>Filter active requests by exact blood group, urgency, and radius. Distance is calculated from your chosen location.</p></div>
+          <button class="btn btn-outline" id="refresh-feed-btn">↻ Refresh</button>
+        </div>
+
+        <div class="discover-layout">
+          <aside class="filter-card">
+            <div class="filter-title"><span>⌕</span><div><h3>Search filters</h3><p>Find relevant requests</p></div></div>
+            <label>Blood group</label>
+            <div class="blood-filter-grid" id="feed-blood-grid">
+              <button class="active" data-group="ALL">All</button><button data-group="A+">A+</button><button data-group="A-">A−</button><button data-group="B+">B+</button><button data-group="B-">B−</button><button data-group="AB+">AB+</button><button data-group="AB-">AB−</button><button data-group="O+">O+</button><button data-group="O-">O−</button>
+            </div>
+            <label for="feed-area">Search location</label>
+            <select id="feed-area" class="input">
+              <option value="kandirpar">Kandirpar, Cumilla</option><option value="racecourse">Race Course, Cumilla</option><option value="jhautola">Jhautola, Cumilla</option><option value="tomsom">Tomsom Bridge, Cumilla</option><option value="shashongacha">Shashongacha, Cumilla</option><option value="kotbari">Kotbari, Cumilla</option><option value="medicalcollege">Medical College Area, Cumilla</option>
+            </select>
+            <button class="location-action" id="feed-current-location"><span>⌖</span><p><b>Use current location</b><small id="feed-location-label">Kandirpar demo location</small></p><i>→</i></button>
+            <label for="feed-radius">Radius <b id="radius-value">10 km</b></label>
+            <input id="feed-radius" type="range" min="2" max="50" value="10" step="1" />
+            <label for="feed-urgency">Urgency</label>
+            <select id="feed-urgency" class="input"><option value="ALL">All active requests</option><option value="EMERGENCY">Emergency only</option><option value="NORMAL">Normal only</option></select>
+            <button class="btn btn-primary full" id="apply-filters-btn">Search requests</button>
+            <div class="filter-note"><span>i</span><p>Distance uses straight-line geographic distance for discovery, not road travel time.</p></div>
+          </aside>
+
+          <div class="feed-column">
+            <div class="feed-toolbar"><p><strong id="feed-count">0</strong> matching requests</p><div class="view-switch"><button class="active" data-view="cards">Cards</button><button data-view="map">Map</button></div></div>
+            <div id="request-feed" class="request-feed"><div class="loading-card"></div><div class="loading-card"></div><div class="loading-card"></div></div>
+            <div id="request-map-wrap" class="request-map-wrap hidden"><div id="request-map"><div class="map-fallback">Loading map…</div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section donor-section" id="donors">
+      <div class="container">
+        <div class="donor-banner">
+          <div><span class="section-kicker light">DONOR MODE</span><h2>Ready to help someone nearby?</h2><p>Publish temporary donor availability. Your exact contact information stays private; requests can only connect after a structured response is accepted.</p></div>
+          <button class="btn btn-white btn-large" id="availability-btn">Set my availability</button>
+        </div>
+        <div class="section-heading split donor-heading"><div><h2>Available donors</h2><p>Public discovery shows general area, exact registered blood group, availability window, and verification status—not private contact details.</p></div><div class="compact-filter"><select id="donor-group" class="input"><option value="ALL">All blood groups</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select><button class="btn btn-outline" id="load-donors-btn">Filter</button></div></div>
+        <div id="donor-grid" class="donor-grid"></div>
+      </div>
+    </section>
+
+    <section class="section how-section" id="how">
+      <div class="container">
+        <div class="section-heading centered"><span class="section-kicker">HOW IT WORKS</span><h2>Structured coordination instead of scattered posts</h2><p>The workflow is designed around discoverability, privacy, lifecycle tracking, and exact-group matching.</p></div>
+        <div class="steps-grid">
+          <article><span>01</span><div class="step-icon">🩸</div><h3>Publish a need</h3><p>Create a structured request with blood group, units, hospital/area, urgency, and needed time.</p></article>
+          <article><span>02</span><div class="step-icon">⌖</div><h3>Discover nearby</h3><p>Location-aware search ranks active exact-group requests by distance, freshness, and urgency.</p></article>
+          <article><span>03</span><div class="step-icon">🤝</div><h3>Respond safely</h3><p>A registered exact-group user can submit “I can donate” without exposing private contact details publicly.</p></article>
+          <article><span>04</span><div class="step-icon">✓</div><h3>Accept & close</h3><p>The requester accepts a response, coordinates directly, then marks the request fulfilled or cancelled.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section safety-section" id="safety">
+      <div class="container safety-grid">
+        <div><span class="section-kicker">PRIVACY & SAFETY</span><h2>Designed for coordination—not clinical decisions.</h2><p>The platform deliberately separates community matching from medical eligibility. A blood-group label on a profile is not proof that someone is medically eligible to donate.</p></div>
+        <div class="safety-list">
+          <div><span>✓</span><p><b>Exact-group prototype matching</b><small>No automatic substitute blood-group recommendations.</small></p></div>
+          <div><span>✓</span><p><b>Private contact workflow</b><small>Email/phone details unlock only after a response is accepted.</small></p></div>
+          <div><span>✓</span><p><b>Expiring requests</b><small>Old emergency posts automatically leave the active feed.</small></p></div>
+          <div><span>✓</span><p><b>Report & moderation layer</b><small>Users can report suspicious content; admins can review platform activity.</small></p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid"><div><a class="brand footer-brand" href="#home"><span class="brand-mark">♥</span><span><strong>BloodNear</strong><small>CONNECT</small></span></a><p>Location-aware community blood request and donor matching platform.</p></div><div><b>Platform</b><a href="#discover">Discover requests</a><a href="#donors">Donors</a><a href="#how">How it works</a></div><div><b>Important</b><a href="#safety">Safety & privacy</a><span>Not a medical compatibility service</span><span>Hospital screening is required</span></div></div>
+    <div class="container footer-bottom"><span>BloodNear Connect · Full-stack university project</span><span>Node.js · SQLite · SSE · Leaflet/OpenStreetMap</span></div>
+  </footer>
+
+  <div class="modal-backdrop hidden" id="auth-modal"><div class="modal-card auth-card"><button class="modal-close" data-close="auth-modal">×</button><div class="modal-brand"><span class="brand-mark">♥</span><div><b>BloodNear Connect</b><small>Community account</small></div></div><div class="tab-switch"><button class="active" data-auth-tab="login">Sign in</button><button data-auth-tab="register">Create account</button></div>
+    <form id="login-form" class="form-stack"><label>Email<input class="input" type="email" name="email" required placeholder="you@example.com" /></label><label>Password<input class="input" type="password" name="password" minlength="8" required placeholder="••••••••" /></label><button class="btn btn-primary full" type="submit">Sign in</button><button class="demo-login" type="button" id="demo-login-btn">Use demo account · nabila@example.com / Demo123!</button></form>
+    <form id="register-form" class="form-stack hidden"><div class="two-col"><label>Full name<input class="input" name="name" required minlength="2" /></label><label>Blood group<select class="input" name="bloodGroup" required><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></label></div><label>Email<input class="input" type="email" name="email" required /></label><label>Password<input class="input" type="password" name="password" minlength="8" required placeholder="Minimum 8 characters" /></label><label>General area<input class="input" name="area" id="register-area" value="Kandirpar, Cumilla" required /></label><input type="hidden" name="lat" id="register-lat" value="23.4607"/><input type="hidden" name="lng" id="register-lng" value="91.1809"/><button class="location-inline" type="button" id="register-location-btn">⌖ Use my current location for general area</button><label>Phone <small>(optional, private until accepted)</small><input class="input" name="phone" /></label><div class="consent-note">By creating an account, you understand that registered blood group does not establish medical donor eligibility.</div><button class="btn btn-primary full" type="submit">Create account</button></form>
+  </div></div>
+
+  <div class="modal-backdrop hidden" id="request-modal"><div class="modal-card wide-modal"><button class="modal-close" data-close="request-modal">×</button><span class="section-kicker">CREATE REQUEST</span><h2>Post a blood request</h2><p class="modal-lead">Provide enough structured information for nearby donors to understand the request. Medical screening remains the hospital's responsibility.</p>
+    <form id="request-form" class="form-grid"><label>Blood group<select class="input" name="bloodGroup" required><option value="">Select group</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></label><label>Required units<input class="input" type="number" name="requiredUnits" min="1" max="20" value="1" required /></label><label class="span-2">Hospital / facility <small>(optional)</small><input class="input" name="hospitalName" placeholder="e.g. Cumilla Medical College Hospital" /></label><label>Urgency<select class="input" name="urgency"><option value="NORMAL">Normal request</option><option value="EMERGENCY">Emergency</option></select></label><label>Needed by<input class="input" type="datetime-local" name="neededBy" id="needed-by" required /></label><label class="span-2">Area / location<input class="input" name="area" id="request-area" value="Kandirpar, Cumilla" required /></label><input type="hidden" name="lat" id="request-lat" value="23.4607"/><input type="hidden" name="lng" id="request-lng" value="91.1809"/><div class="span-2 location-row"><select class="input" id="request-location-select"><option value="kandirpar">Kandirpar</option><option value="racecourse">Race Course</option><option value="jhautola">Jhautola</option><option value="tomsom">Tomsom Bridge</option><option value="shashongacha">Shashongacha</option><option value="kotbari">Kotbari</option><option value="medicalcollege">Medical College Area</option></select><button class="btn btn-outline" type="button" id="request-current-location">⌖ Current location</button></div><label class="span-2">Description<textarea class="input textarea" name="description" maxlength="700" placeholder="Add only useful coordination details. Avoid posting sensitive medical records."></textarea></label><label class="span-2">Contact preference<select class="input" name="contactPreference"><option value="AFTER_ACCEPT">Share contact only after I accept a donor response</option><option value="MESSAGE_ONLY">Keep contact private; use platform response workflow only</option></select></label><div class="span-2 form-warning"><b>Safety:</b> This post requests community coordination only. The platform does not verify clinical compatibility or donor eligibility.</div><button class="btn btn-primary span-2" type="submit">Publish request</button></form>
+  </div></div>
+
+  <div class="modal-backdrop hidden" id="availability-modal"><div class="modal-card"><button class="modal-close" data-close="availability-modal">×</button><span class="section-kicker">DONOR AVAILABILITY</span><h2>Let nearby requests find you</h2><p class="modal-lead">Availability is temporary and uses your registered blood group. You still need hospital screening before any donation.</p><form id="availability-form" class="form-stack"><label>Blood group<input class="input" id="availability-group" disabled /></label><label>General area<input class="input" name="area" id="availability-area" value="Kandirpar, Cumilla" required /></label><input type="hidden" name="lat" id="availability-lat" value="23.4607"/><input type="hidden" name="lng" id="availability-lng" value="91.1809"/><button class="location-inline" type="button" id="availability-current-location">⌖ Use my current location</button><label>Available until<input class="input" type="datetime-local" name="availableUntil" id="available-until" required /></label><label>Short note<textarea class="input textarea short" name="note" maxlength="240" placeholder="e.g. Available after 4 PM; can travel within central Cumilla."></textarea></label><button class="btn btn-primary full" type="submit">Save availability</button><button class="btn btn-danger-soft full" type="button" id="pause-availability-btn">Pause my availability</button></form></div></div>
+
+  <div class="modal-backdrop hidden" id="request-detail-modal"><div class="modal-card detail-modal"><button class="modal-close" data-close="request-detail-modal">×</button><div id="request-detail-content"></div></div></div>
+
+  <div class="drawer-backdrop hidden" id="dashboard-backdrop"></div><aside class="dashboard-drawer" id="dashboard-drawer"><div class="drawer-head"><div><span class="section-kicker">MY ACCOUNT</span><h2>Dashboard</h2></div><button class="modal-close static" id="dashboard-close">×</button></div><div class="drawer-profile"><span id="drawer-avatar">U</span><div><b id="drawer-name">User</b><small id="drawer-meta">Blood group · Area</small></div></div><div class="drawer-tabs"><button class="active" data-drawer-tab="requests">My requests</button><button data-drawer-tab="notifications">Notifications</button><button data-drawer-tab="admin" id="admin-tab" class="hidden">Admin</button></div><div class="drawer-content" id="drawer-content"></div><div class="drawer-footer"><button class="btn btn-outline full" id="logout-btn">Sign out</button></div></aside>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/app.js"></script>
+</body>
+</html>
