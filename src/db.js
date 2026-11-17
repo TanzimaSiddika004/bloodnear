@@ -43,7 +43,13 @@ const dbPath = resolveDbPath();
 try {
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 } catch {}
-const db = new DatabaseSync(dbPath);
+let db;
+try {
+  db = new DatabaseSync(dbPath);
+} catch (err) {
+  console.warn('Could not open file database at', dbPath, err.message, '- falling back to :memory:');
+  db = new DatabaseSync(':memory:');
+}
 try {
   db.exec('PRAGMA foreign_keys = ON;');
   db.exec('PRAGMA journal_mode = WAL;');

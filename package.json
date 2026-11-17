@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "description": "Location-aware community blood request and donor matching platform",
+  "main": "server.js",
   "type": "commonjs",
   "engines": { "node": "22.x" },
   "scripts": {

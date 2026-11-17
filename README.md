@@ -135,9 +135,6 @@ The production flag adds the `Secure` attribute to the session cookie, so produc
 
 ```text
 bloodnear-project/
-├── api/
-│   └── index.js              # Vercel Serverless Function entrypoint
-├── vercel.json               # Vercel deployment configuration
 ├── server.js                 # Native Node HTTP server + API routes
 ├── package.json
 ├── README.md
@@ -161,16 +158,16 @@ bloodnear-project/
 
 ## Vercel Deployment
 
-BloodNear Connect is configured for 1-click zero-configuration deployment to [Vercel](https://vercel.com):
+BloodNear Connect works directly with Vercel's zero-config deployment:
 
 1. **Import the repository** into Vercel from GitHub (`TanzimaSiddika004/bloodnear`).
 2. Leave Framework Preset as **Other** (default).
-3. Ensure the Node.js version is **22.x** in project settings (handled automatically via `engines` in `package.json`).
+3. Vercel automatically detects `server.js` as the root entrypoint and serves static assets from `public/`.
 4. (Optional) In **Environment Variables**, set:
    - `SESSION_SECRET`: a long random string for production session signing.
 5. Click **Deploy**.
 
-The preconfigured `vercel.json` routes static requests (`/`, `/styles.css`, `/app.js`) from `public/` and serverless API endpoints through `api/index.js`. On serverless environments, SQLite data is stored in `/tmp/bloodnear.sqlite` and automatically seeded on container boot.
+On serverless environments, SQLite data is stored in `/tmp/bloodnear.sqlite` (with in-memory fallback) and automatically seeded on container boot.
 
 ## Database entities
 

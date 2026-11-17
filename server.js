@@ -8,7 +8,7 @@ const { BLOOD_GROUPS, uid, nowIso, haversineKm, requestMatchScore, publicUser } 
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
-const PUBLIC_DIR = path.join(__dirname, 'public');
+const PUBLIC_DIR = fs.existsSync(path.join(process.cwd(), 'public')) ? path.join(process.cwd(), 'public') : path.join(__dirname, 'public');
 const MAX_BODY = 1024 * 1024;
 const sseClients = new Map();
 const rateBuckets = new Map();
@@ -176,8 +176,10 @@ function pushNotification(userId, type, title, message, link = null) {
 function serveStatic(req, res, pathname) {
   let rel = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
   rel = path.normalize(rel).replace(/^(\.\.(\/|\\|$))+/, '');
-  const filePath = path.join(PUBLIC_DIR, rel);
-  if (!filePath.startsWith(PUBLIC_DIR)) return false;
+  let filePath = path.join(PUBLIC_DIR, rel);
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    filePath = path.join(process.cwd(), rel);
+  }
   if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return false;
   const ext = path.extname(filePath).toLowerCase();
   const types = {
@@ -649,3 +651,4 @@ if (require.main === module) {
 module.exports = handleRequest;
 module.exports.server = server;
 module.exports.handleRequest = handleRequest;
+module.exports.default = handleRequest;
